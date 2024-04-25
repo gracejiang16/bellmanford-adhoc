@@ -1,3 +1,5 @@
+open util/integer
+
 // represents 1 Server in a fixed-topology cluster
 sig Node {
 	id: disj one Int,
@@ -7,24 +9,16 @@ sig Node {
 one sig Source extends Node {
 	// SINGLE-source algorithm, so we specify a single source
 
-	distances : Node->Distance
+	var distances : Node->Distance
 }
+
+one var sig Iter in Int {} // for outer loop |v|-1 times
 
 abstract sig Distance {}
 one sig Infinite extends Distance {}
 sig Finite extends Distance {
 	value: disj Int
 }
-
-//sig DistanceEntry {
-//	id: disj one Int,
-//	var dist: Distance
-//}
-
-//fact allNodesHaveDistanceEntries {
-//	// every node must have a distance entry
-//	DistanceEntry.id = Node.id
-//}
 
 //pred update[du:Node, dv:Node] {
 //	//given a src/dest and the old and new possible distances between them, update src's distance "table" if new distance is better
@@ -39,7 +33,7 @@ sig Finite extends Distance {
 //}
 
 pred init {
-	Source.(Source.distances).value = 0 // Source Distance to itself is Finite zero
+	Source.(Source.distances).value = 0 // Distance from the source to itself is zero (Finite)
 
 	all n:(Node - Source) | {
 		n->Infinite in Source.distances // initialize all Distances to Infinite
@@ -53,28 +47,38 @@ fact graphContraints {
 }
 
 //pred canthave double dests
-//
-//pred relax{
-//	// for all edge (u,v) in Edges
-//	all neighbor: neighbors |
-//		{
-//			let dist_u = neighbor.Node --
-//			{
-//				let dist_v = Node.neighbor |
-//				{
-//					update[dist_u, dist_v]
-//				}
-//			}
-//		}
-//
-//	// below: dests don't change for non neighbors-of-src
-//	//all nonNeighbor : Node - src.neighbors | nonNeighbor.dests' = nonNeighbor.dests	
-//	
-//
-//}
+
+pred relax{
+	// precondition for for loop
+	gt[Iter, 0]
+
+	// action
+	Iter' = sub[Iter, 1]
+	// for all edge (u,v) in Edges
+	all neighbor: neighbors |
+		{
+			let dist_u = neighbor.Node --
+			{
+				let dist_v = Node.neighbor |
+				{
+					update[dist_u, dist_v]
+				}
+			}
+		}
+
+	// below: dests don't change for non neighbors-of-src
+	//all nonNeighbor : Node - src.neighbors | nonNeighbor.dests' = nonNeighbor.dests	
+	
+}
+
+fun addDistances[d1, d2: Distance] : Dist {
+	some d3:Distance | {
+		d1 in Infinite or d2 in Infinite | some Infinite
+	}
+}
 
 pred doNothingOnceFinished {
-
+	
 }
 
 fact validTraces {
