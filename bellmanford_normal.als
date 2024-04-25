@@ -1,39 +1,48 @@
 // represents 1 Server in a fixed-topology cluster
 sig Node {
 	id: disj one Int,
-	//table: set TableRow,
 	neighbors: set Node,
-	var dests : set Node->Distance
 }
 
 abstract sig Distance {}
 one sig Infinite extends Distance {}
 sig Finite extends Distance {
-	value: Int
+	value: disj Int
 }
 
-pred update[src:Node, new_dist:Distance, old_dist:Distance] {
-// given a src/dest and the old and new possible distances between them, update src's distance "table" if new distance is better
-	(new_dist in Infinite and old_dist in Infinite) or (new_dist in Infinite and old_dist in Finite) =>
-		(src.dests' = src.dests)
-	(new_dist in Finite and old_dist in Infinite) =>
-		(src.dests' = src.dests - src->old_dist + src->new_dist)
-
-	(new_dist in Finite and old_dist in Finite) =>
-		{ (new_dist.value < old_dist.value) =>
-			(src.dests' = src.dests - src->old_dist + src->new_dist)
-		  not (new_dist.value < old_dist.value) =>
-			(src.dests' = src.dests)
-		}
+sig DistanceEntry {
+	id: disj one Int,
+	var dist: Distance
 }
 
-var sig toProcess in Node {} // set of nodes that still need to update their distance "tables"
+fact allNodesHaveDistanceEntries {
+	// every node must have a distance entry
+	DistanceEntry.id = Node.id
+}
+
+pred update[du:Node, dv:Node] {
+	//given a src/dest and the old and new possible distances between them, update src's distance "table" if new distance is better
+	some dist1,dist2: Distance | { dist1.id = du.id and dist2.id = dv.id} => {
+		(dist1 in Infinite and dist2 in Infinite) or (dist1 in Infinite and dist2 in Finite) =>
+			
+		(dist1 in Finite and dist2 in Infinite) =>
+			
+		(dist1 in Finite and dist2 in Finite) =>
+
+	}
+}
 
 pred init {
-	all src:Node | src.dests = Node->Infinite
-	toProcess = Node
+	// initialize all DistanceEntry to be infinity, except for 1 "source" node with finite distance 0
+	one n: Node | some f: Finite | some d: DistanceEntry | {
+		// initialize 1 source node
+		f.value = 0
+		d.id = n.id
+		d.dist = f
 
-	//all n:Node | some f:Finite | n->f in n.dests and f.value = 0// set distance to self as zero
+		// set all other DistanceEntry to be infinity
+		(DistanceEntry - d).dist = Infinite
+	}
 }
 
 fact graphContraints {
@@ -42,50 +51,35 @@ fact graphContraints {
 }
 
 //pred canthave double dests
-
+//
 pred relax{
-	// precondition
-	some toProcess
-
-	// action: choose one src to be processors
-	one src: toProcess | 
-	{
-		//src.(src.dests) in Finite and src.(src.dests).value = 0 
-		all neighbor : src.neighbors |
+	// for all edge (u,v) in Edges
+	all neighbor: neighbors |
+		{
+			let dist_u = neighbor.Node --
 			{
-				let dist_through_neighbor = neighbor.(src.dests) + 1 |
+				let dist_v = Node.neighbor |
 				{
-				let dist_through_src = src.(src.dests) |
-				{
-					update[src, dist_through_neighbor, dist_through_src]
-				}
+					update[dist_u, dist_v]
 				}
 			}
+		}
 
-		// below: dests don't change for non neighbors-of-src
-		all nonNeighbor : Node - src.neighbors | nonNeighbor.dests' = nonNeighbor.dests	
-		toProcess' = toProcess - src
-	}
+	// below: dests don't change for non neighbors-of-src
+	//all nonNeighbor : Node - src.neighbors | nonNeighbor.dests' = nonNeighbor.dests	
+	
 
 }
 
 pred doNothingOnceFinished {
-	// precondition
-	no toProcess
-	// action
-	all n:Node | n.dests' = n.dests
-	toProcess' = toProcess
+
 }
 
 fact validTraces {
-	init 
+	init
+ 
 	// for all nodes, keep relaxing
-	always( relax or doNothingOnceFinished) //or doNothing[n])
+	// always( relax or doNothingOnceFinished) //or doNothing[n])
 }
 
 run {#Node = 3} for 3
-//Pred init
-//Initialize distance to all other nodes as infinity
-//#table = #Node // num of table rows must be total num Nodes minus 1
-//pred updateTable[s: Node] // s is starting node
-//all n : neighbors | s.Table.dest
