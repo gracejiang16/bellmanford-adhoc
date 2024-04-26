@@ -70,7 +70,6 @@ pred relax{
 			}
 			}
 		}
-	
 }
 
 // custom function to compare distances (which can be infinite)
@@ -86,14 +85,14 @@ pred relax{
 //}
 
 // define custom add Distances function
-fun addDistances[d1, d2: Distance] : Distance {
-	{
-		d3:Distance | {
-			(d1 in Finite and d2 in Finite) => (d3 in Finite and d3.value = add[d1.value, d2.value])
-			not (d1 in Finite and d2 in Finite) => (d3 in Infinite)
-		}
-	}
-}
+//fun addDistances[d1, d2: Distance] : Distance {
+//	{
+//		d3:Distance | {
+//			(d1 in Finite and d2 in Finite) => (d3 in Finite and d3.value = add[d1.value, d2.value])
+//			not (d1 in Finite and d2 in Finite) => (d3 in Infinite)
+//		}
+//	}
+//}
 
 pred doNothingOnceFinished {
 	// pre condition
