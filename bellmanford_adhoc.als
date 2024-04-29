@@ -1,6 +1,6 @@
 open util/boolean
 
-// represents 1 Server in a fixed-topology cluster
+// represents 1 Mobile Host, i.e., node in a wireless network
 sig Node {
 	id: disj one Int,
 	neighbors: set Node,
@@ -96,3 +96,4 @@ fact validTraces {
 }
 
 run {#Node = 5} for 5
+
