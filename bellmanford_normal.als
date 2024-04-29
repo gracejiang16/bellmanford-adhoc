@@ -9,7 +9,6 @@ sig Node {
 
 one sig Source extends Node {
 	// SINGLE-source algorithm, so we specify a single source
-
 	var distances : Node-> Distance
 }
 
@@ -37,8 +36,6 @@ fact graphContraints {
 	all u, v:Node | u->v in ^neighbors // connected
 }
 
-//pred canthave double dests
-
 pred relax{
 	// precondition for for loop
 	gt[Iter, 0]
@@ -50,24 +47,16 @@ pred relax{
 	all v: Node | {
 		// for all nodes, if there should not be an update in the distance table (because there is no shorter path reachable), 
 		// then the distance shouldn't change
-      		(no u : Node | (u->v in neighbors and v->u in neighbors) and compareDistances[u.(Source.distances),v.(Source.distances)].isTrue)
+      		(no u1: Node | (u1->v in neighbors) and compareDistances[u1.(Source.distances), v.(Source.distances)].isTrue)
          		=> v.(Source.distances') = v.(Source.distances)
 
 		// for all nodes, if there should be an update in the distance table (because there is a shorter path reachable), 
 		// then the distance should change
-		some node2: Node | (v->node2 in neighbors and node2->v in neighbors) and
-		{
-			let d_node1 = node2.(Source.distances) |
-			{
-			let d_node2 = v.(Source.distances) |
-			{
-				compareDistances[d_node1,d_node2].isTrue => some f: Finite | {
-					f.value = add[d_node1.value, 1] 
-					node2.(Source.distances') = f
+		all u2: Node | (u2->v in neighbors) and compareDistances[u2.(Source.distances), v.(Source.distances)].isTrue
+			=> some f: Finite | {
+					f.value = add[u2.(Source.distances).value, 1] 
+					v.(Source.distances') = f
 				}
-			}
-			}
-		}
 	}
 }
 
@@ -100,4 +89,4 @@ fact validTraces {
 	always( relax or doNothingOnceFinished )
 }
 
-run {#Node = 4} for 4
+run {#Node = 7} for 7
