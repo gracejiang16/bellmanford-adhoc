@@ -12,6 +12,13 @@ one sig Source extends Node {
 	var distances : Node-> Distance
 }
 
+fact nodeMapsToOneDistance {
+	// each node only maps to one distance
+	always {
+		all n: Node | one n.(Source.distances)
+	}
+}
+
 one var sig Iter in Int {} // for outer loop |v|-1 times
 
 abstract sig Distance {}
@@ -89,4 +96,4 @@ fact validTraces {
 	always( relax or doNothingOnceFinished )
 }
 
-run {#Node = 7} for 7
+run {#Node = 5} for 5
