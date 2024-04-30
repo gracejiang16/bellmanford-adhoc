@@ -4,21 +4,17 @@ open util/boolean
 sig Node {
 	id: disj one Int,
 	neighbors: set Node,
-}
-
-one sig Source extends Node {
-	// SINGLE-source algorithm, so we specify a single source
 	var distances : Node-> Distance
 }
 
 fact nodeMapsToOneDistance {
 	// each node only maps to one distance
 	always {
-		all n: Node | one n.(Source.distances)
+		all n, m: Node | one m.(n.distances)
 	}
 }
 
-one var sig Iter in Int {} // for outer loop |v|-1 times
+one var sig Iter in Int {} // to limit how many iterations we can do
 
 abstract sig Distance {}
 one sig Infinite extends Distance {}
@@ -27,12 +23,12 @@ sig Finite extends Distance {
 }
 
 pred init {
-	Iter = sub[#Node, 1]
-	Source.(Source.distances).value = 0 // Distance from the source to itself is zero (Finite)
+	Iter = #Node // TODO increase if necessary
+	all n:Node | n.(n.distances).value = 0 // Distance from the source to itself is zero (Finite)
 
-	all n:(Node - Source) | {
-		n->Infinite in Source.distances // initialize all Distances to Infinite
-		one n.(Source.distances) // only one Distance per destination node
+	all disj n, m:Node | {
+		n->Infinite in m.distances // initialize all non self-to-self Distances to Infinite
+		one n.(m.distances) // only one Distance per destination node
 	}
 }
 
@@ -42,28 +38,37 @@ fact graphContraints {
 	all u, v:Node | u->v in ^neighbors // connected
 }
 
-pred relax{
-	// precondition for for loop
+// this pred is called whenever a node has new info in its distance table and needs to notify its neighbors
+pred sendNewInfo[sender: Node] {
+	// precondition
 	gt[Iter, 0]
 
 	// action
 	Iter' = sub[Iter, 1]
 
-	// for all edge (u,v) in Edges
-	all v: Node | {
-		// for all nodes, if there should not be an update in the distance table (because there is no shorter path reachable), 
-		// then the distance shouldn't change
-      		(no u1: Node | (u1->v in neighbors) and compareDistances[u1.(Source.distances), v.(Source.distances)].isTrue)
-         		=> v.(Source.distances') = v.(Source.distances)
+	all neighbor: sender.neighbors | updateDV[sender, neighbor]
+}
 
-		// for all nodes, if there should be an update in the distance table (because there is a shorter path reachable), 
+// receiverNode updates its own distance vector (table) when it receives new info from sender
+pred updateDV[sender:Node, receiver:Node]{
+	// if there's not shorter path to desk through sender, DV doesn't change
+      	(no dest: Node | compareDistances[dest.(sender.distances), dest.(receiver.distances)].isTrue)
+         	=> receiver.distances' = receiver.distances
+
+	// for all nodes, if there should be an update in the distance table (because there is a shorter path reachable through sender), 
 		// then the distance should change
-		all u2: Node | (u2->v in neighbors) and compareDistances[u2.(Source.distances), v.(Source.distances)].isTrue
-			=> some f: Finite | {
-					f.value = add[u2.(Source.distances).value, 1] 
-					v.(Source.distances') = f
-				}
-	}
+	all dest: Node |	
+		{
+		// if  there's shorter path to dest through sender, update own DV accordingly
+		compareDistances[dest.(sender.distances), dest.(receiver.distances)].isTrue
+		=> (some f: Finite | {
+				f.value = add[dest.(sender.distances).value, 1]
+				dest.(receiver.distances') = f
+			})
+//		// if there's not shorter path to desk through sender, DV doesn't change//
+//		compareDistances[dest.(sender.distances), dest.(receiver.distances)].isFalse
+//         		=> dest.(receiver.distances') = dest.(receiver.distances)
+		}
 }
 
 // custom function to compare distances (which can be infinite)
@@ -80,19 +85,22 @@ fun compareDistances[d1, d2: Distance] : Bool {
 	}
 }
 
-pred doNothingOnceFinished {
+pred doesNothing[n:Node] {
 	// pre condition
 	Iter = 0
 
 	// action
-	distances' = distances
-	Iter' = Iter
+	n.distances' = n.distances
 }
 
 fact validTraces {
 	init
 
-	always( relax or doNothingOnceFinished )
+	all n:Node | sendNewInfo[n]
+
+	always {
+		all n: Node | sendNewInfo[n] or doesNothing[n]
+	}
 }
 
 run {#Node = 5} for 5

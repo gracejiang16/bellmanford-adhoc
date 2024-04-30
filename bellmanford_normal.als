@@ -32,12 +32,10 @@ pred init {
 
 	all n:(Node - Source) | {
 		n->Infinite in Source.distances // initialize all Distances to Infinite
-		one n.(Source.distances) // only one Distance per destination node
 	}
 }
 
 fact graphContraints {
-	neighbors = ~neighbors // undirected
 	no iden & neighbors // no self loops
 	all u, v:Node | u->v in ^neighbors // connected
 }
