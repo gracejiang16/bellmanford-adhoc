@@ -14,6 +14,13 @@ fact nodeMapsToOneDistance {
 	}
 }
 
+fact staysFinite {
+	// once a distance between 2 nodes becomes finite, it can't revert back to infinite distance
+	always {
+		all n, m : Node | (m.(n.distances) in Finite => once m.(n.distances) in Finite)
+	}
+}
+
 one var sig Iter in Int {} // to limit how many iterations we can do
 
 abstract sig Distance {}
@@ -64,10 +71,7 @@ pred updateDV[sender:Node, receiver:Node]{
 		=> (some f: Finite | {
 				f.value = add[dest.(sender.distances).value, 1]
 				dest.(receiver.distances') = f
-			})
-//		// if there's not shorter path to desk through sender, DV doesn't change//
-//		compareDistances[dest.(sender.distances), dest.(receiver.distances)].isFalse
-//         		=> dest.(receiver.distances') = dest.(receiver.distances)
+			}) // and sendNewInfo[receiver] // notify my neighbors that I updated my DV
 		}
 }
 
@@ -96,7 +100,7 @@ pred doesNothing[n:Node] {
 fact validTraces {
 	init
 
-	all n:Node | sendNewInfo[n]
+	all n:Node | sendNewInfo[n] // algo starts by all Nodes sending their own distance tables
 
 	always {
 		all n: Node | sendNewInfo[n] or doesNothing[n]
