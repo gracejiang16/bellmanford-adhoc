@@ -9,10 +9,7 @@ sig Node {
 }
 
 abstract sig State {}
-one sig Ready, Sent, Busy extends State{}
-
-abstract sig Step{}
-one sig Raise, Enter, Leave, Nothing extends Step{}
+one sig Ready, Sent extends State{}
 
 fact nodeMapsToOneDistance {
 	// each node only maps to one distance
@@ -112,9 +109,6 @@ pred doNothing {
 	// action
 	distances' = distances
 	state' = state
-	
-
-	//n.whichStep = Nothing
 }
 
 fact validTraces {
