@@ -115,4 +115,12 @@ fact validTraces {
 	always( relax or doNothingOnceFinished )
 }
 
+assert foundShortestPaths {
+	all dest: Node | { // for all destination nodes,
+		no path: set Node { // there isn't another smaller cost path from Source
+			
+		}
+	}
+}
+
 run {#Node = 5} for 5
