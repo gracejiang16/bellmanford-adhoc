@@ -27,7 +27,7 @@ sig Finite extends Distance {
 }
 
 pred init {
-	Iter = add[#Node,#Node] // TODO increase if necessary
+	Iter = #Node // TODO increase if necessary
 	all n:Node | {
 		n.(n.distances).value = 0 // Distance from the source to itself is zero (Finite)
 		n.state = Ready
@@ -55,10 +55,7 @@ pred sendNewInfo {
 
 	// choose one node to update its neighbors' DV
 	one sender: Node | {
-		all neighbor: sender.neighbors | {
-			//neighbor in sender.neighbors =>
-			updateDV[sender, neighbor]
-		}
+		all neighbor: sender.neighbors | updateDV[sender, neighbor]
 
 		sender.state' = Sent  -- sender state only used to visualize which node is sending
 		(Node - sender).state' = Ready
