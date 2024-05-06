@@ -4,6 +4,14 @@ open util/boolean
 sig Node {
 	id: disj one Int,
 	neighbors: set Node,
+
+	weights : Node->Finite
+}
+
+// there must be weights between neighbor pairs that are positive (in our implementation) and finite
+fact weightsBetweenNeighborPairs {
+	all disj n, m : Node | (m in n.neighbors) // if n and m are neighbors
+		=> (some d : Finite | m->d in n.weights and gt[d.value, 0]) // then n to m has some positive finite edge weight
 }
 
 one sig Source extends Node {
@@ -11,10 +19,15 @@ one sig Source extends Node {
 	var distances : Node-> Distance
 }
 
-fact nodeMapsToOneDistance {
+fact nodeMapsToOneDistanceAndWeight {
 	// each node only maps to one distance
 	always {
 		all n: Node | one n.(Source.distances)
+	}
+
+	// each node pair only has one weight
+	always {
+		all n, m : Node | one m.(n.weights)
 	}
 }
 
@@ -51,26 +64,35 @@ pred relax{
 	all v: Node | {
 		// for all nodes, if there should not be an update in the distance table (because there is no shorter path reachable), 
 		// then the distance shouldn't change
-      		(no u1: Node | (u1->v in neighbors) and compareDistances[u1.(Source.distances), v.(Source.distances)].isTrue)
+      		(no u1: Node | (u1->v in neighbors) and compareDistances[addDistances[u1.(Source.distances), v.(u1.weights)], v.(Source.distances)].isTrue)
          		=> v.(Source.distances') = v.(Source.distances)
 
 		// for all nodes, if there should be an update in the distance table (because there is a shorter path reachable), 
 		// then the distance should change
-		all u2: Node | (u2->v in neighbors) and compareDistances[u2.(Source.distances), v.(Source.distances)].isTrue
+		all u2: Node | (u2->v in neighbors) and compareDistances[addDistances[u2.(Source.distances), v.(u2.weights)], v.(Source.distances)].isTrue
 			=> some f: Finite | {
-					f.value = add[u2.(Source.distances).value, 1] 
+					f.value = (addDistances[u2.(Source.distances), v.(u2.weights)]).value
 					v.(Source.distances') = f
 				}
 	}
 }
 
+// define custom add Distances function
+fun addDistances[d1, d2: Distance] : Distance {
+	{
+		d3:Distance | {
+			(d1 in Finite and d2 in Finite) => (d3 in Finite and d3.value = add[d1.value, d2.value])
+			not (d1 in Finite and d2 in Finite) => (d3 in Infinite)
+		}
+	}
+}
+
 // custom function to compare distances (which can be infinite)
-// returns TRUE if d1+1 < d2
-// NOTE: if d1 is Finite, we are comparing (d1 +1) to the value of d2 as opposed to strictly d1 < d2
+// returns TRUE if d1< d2
 fun compareDistances[d1, d2: Distance] : Bool {
 	{
 		b:Bool | {
-			(d1 in Finite and d2 in Finite) => (lt[add[d1.value,1], d2.value] => b.isTrue)
+			(d1 in Finite and d2 in Finite) => (lt[d1.value, d2.value] => b.isTrue)
 			(d1 in Finite and d2 in Infinite) => (b.isTrue)
 			(d1 in Infinite and d2 in Finite) => (b.isFalse)
 			(d1 in Infinite and d2 in Infinite) => (b.isFalse)
