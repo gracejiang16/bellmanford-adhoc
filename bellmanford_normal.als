@@ -92,7 +92,8 @@ fun addDistances[d1, d2: Distance] : Distance {
 fun compareDistances[d1, d2: Distance] : Bool {
 	{
 		b:Bool | {
-			(d1 in Finite and d2 in Finite) => (lt[d1.value, d2.value] => b.isTrue)
+			(d1 in Finite and d2 in Finite and lt[d1.value, d2.value]) => (b.isTrue)
+			(d1 in Finite and d2 in Finite and not lt[d1.value, d2.value]) => (b.isFalse)
 			(d1 in Finite and d2 in Infinite) => (b.isTrue)
 			(d1 in Infinite and d2 in Finite) => (b.isFalse)
 			(d1 in Infinite and d2 in Infinite) => (b.isFalse)
@@ -115,12 +116,23 @@ fact validTraces {
 	always( relax or doNothingOnceFinished )
 }
 
-assert foundShortestPaths {
-	all dest: Node | { // for all destination nodes,
-		no path: set Node { // there isn't another smaller cost path from Source
-			
-		}
+//assert foundShortestPaths {
+//	all dest: Node | { // for all destination nodes,
+//		no path: set Node { // there isn't another smaller cost path from Source
+//			
+//		}
+//	}
+//}
+
+run {#Node = 5} for 5
+
+---------------------------------------------
+
+// once a distance between 2 nodes becomes finite, it can't revert back to infinite distance
+assert staysFinite {
+	always {
+		all n: Node | (n.(Source.distances) in Finite => once n.(Source.distances) in Finite)
 	}
 }
 
-run {#Node = 5} for 5
+check staysFinite
