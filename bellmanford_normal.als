@@ -116,13 +116,16 @@ fact validTraces {
 	always( relax or doNothingOnceFinished )
 }
 
-//assert foundShortestPaths {
-//	all dest: Node | { // for all destination nodes,
-//		no path: set Node { // there isn't another smaller cost path from Source
-//			
-//		}
-//	}
-//}
+assert foundShortestPaths {
+	eventually {
+		all dest: Node | { // for all destination nodes,
+			no edges: set Node->Node { // there isn't another smaller cost path from Source
+				(Source->dest in ^edges) and lt[sum[(Node.edges).((edges.Node).distances).value], dest.(Source.distances).value]
+			}
+		}
+	}
+}
+check foundShortestPaths
 
 run {#Node = 5} for 5
 
