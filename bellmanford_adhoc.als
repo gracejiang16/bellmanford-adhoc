@@ -83,7 +83,7 @@ pred updateDV[sender:Node, receiver:Node]{
 				dest.(receiver.distances') = f
 			}) // and sendNewInfo[receiver] // notify my neighbors that I updated my DV
 		}
-	receiver.whichStep = Update
+	//receiver.whichStep = Update
 }
 
 // custom function to compare distances (which can be infinite)
