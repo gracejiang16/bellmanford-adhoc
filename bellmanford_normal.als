@@ -116,6 +116,9 @@ fact validTraces {
 	always( relax or doNothingOnceFinished )
 }
 
+run {#Node = 5} for 5
+
+// check that no shorter path exists to every node
 assert foundShortestPaths {
 	eventually {
 		all dest: Node | { // for all destination nodes,
@@ -126,10 +129,6 @@ assert foundShortestPaths {
 	}
 }
 check foundShortestPaths
-
-run {#Node = 5} for 5
-
----------------------------------------------
 
 // once a distance between 2 nodes becomes finite, it can't revert back to infinite distance
 assert staysFinite {
